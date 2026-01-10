@@ -65,6 +65,7 @@
     "node": ">=20"
   },
   "dependencies": {
+    "@tax1driver/node-tpay": "file:.yalc/@tax1driver/node-tpay",
     "zod": "^4.3.5"
   }
 }

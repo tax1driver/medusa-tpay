@@ -1,0 +1,9 @@
+{
+  "version": "v1",
+  "packages": {
+    "@tax1driver/node-tpay": {
+      "signature": "cfbda6d896bcb664c442e2a5f2d1c3c7",
+      "file": true
+    }
+  }
+}
