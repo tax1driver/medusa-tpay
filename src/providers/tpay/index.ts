@@ -67,6 +67,7 @@ export class TPayPaymentProviderService extends AbstractPaymentProvider<TPayOpti
     }
 
     async initiatePayment(input: InitiatePaymentInput): Promise<InitiatePaymentOutput> {
+        this.logger_.info(`initiatePayment: ${JSON.stringify(input)}`);
         const data = InitiatePaymentSchema.parse(input.data);
         const sessionId = data.session_id;
 
@@ -120,6 +121,7 @@ export class TPayPaymentProviderService extends AbstractPaymentProvider<TPayOpti
     }
 
     async getWebhookActionAndData(payload: ProviderWebhookPayload['payload']): Promise<WebhookActionResult> {
+        this.logger_.info(`getWebhookActionAndData: ${JSON.stringify(payload)}`);
         const { rawData, headers } = payload;
 
         const tpayResult = await this.client_.notifications.validateRequest(
@@ -155,6 +157,7 @@ export class TPayPaymentProviderService extends AbstractPaymentProvider<TPayOpti
     }
 
     async authorizePayment(input: AuthorizePaymentInput): Promise<AuthorizePaymentOutput> {
+        this.logger_.info(`authorizePayment: ${JSON.stringify(input)}`);
         return {
             data: input.data,
             status: (await this.getPaymentStatus({ data: input.data })).status
@@ -162,6 +165,7 @@ export class TPayPaymentProviderService extends AbstractPaymentProvider<TPayOpti
     }
 
     async capturePayment(input: CapturePaymentInput): Promise<CapturePaymentOutput> {
+        this.logger_.info(`capturePayment: ${JSON.stringify(input)}`);
         const data = input.data as unknown as TPayPaymentData;
 
         if (!data || !data.session_id) {
@@ -185,6 +189,7 @@ export class TPayPaymentProviderService extends AbstractPaymentProvider<TPayOpti
     }
 
     async refundPayment(input: RefundPaymentInput): Promise<RefundPaymentOutput> {
+        this.logger_.info(`refundPayment: ${JSON.stringify(input)}`);
         const data = input.data as unknown as TPayPaymentData;
 
         if (!data || !data.session_id) {
@@ -211,6 +216,7 @@ export class TPayPaymentProviderService extends AbstractPaymentProvider<TPayOpti
     }
 
     async getPaymentStatus(input: GetPaymentStatusInput): Promise<GetPaymentStatusOutput> {
+        this.logger_.info(`getPaymentStatus: ${JSON.stringify(input)}`);
         const data = input.data as unknown as TPayPaymentData;
 
         if (!data || !data.session_id) {
@@ -232,10 +238,12 @@ export class TPayPaymentProviderService extends AbstractPaymentProvider<TPayOpti
     }
 
     async retrievePayment(input: RetrievePaymentInput): Promise<RetrievePaymentOutput> {
+        this.logger_.info(`retrievePayment: ${JSON.stringify(input)}`);
         return { data: input.data };
     }
 
     async cancelPayment(input: CancelPaymentInput): Promise<CancelPaymentOutput> {
+        this.logger_.info(`cancelPayment: ${JSON.stringify(input)}`);
         const data = input.data as unknown as TPayPaymentData;
 
         if (!data || !data.session_id) {
@@ -264,10 +272,12 @@ export class TPayPaymentProviderService extends AbstractPaymentProvider<TPayOpti
     }
 
     async deletePayment(input: DeletePaymentInput): Promise<DeletePaymentOutput> {
+        this.logger_.info(`deletePayment: ${JSON.stringify(input)}`);
         return { data: input.data };
     }
 
     async updatePayment(input: UpdatePaymentInput): Promise<UpdatePaymentOutput> {
+        this.logger_.info(`updatePayment: ${JSON.stringify(input)}`);
         return { data: input.data };
     }
 
