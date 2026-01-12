@@ -1,4 +1,4 @@
-import { AbstractPaymentProvider, MedusaError } from '@medusajs/framework/utils';
+import { AbstractPaymentProvider, MedusaError, ModuleProvider, Modules } from '@medusajs/framework/utils';
 import { Logger } from '@medusajs/medusa';
 import { AuthorizePaymentInput, AuthorizePaymentOutput, CancelPaymentInput, CancelPaymentOutput, CapturePaymentInput, CapturePaymentOutput, DeletePaymentInput, DeletePaymentOutput, GetPaymentStatusInput, GetPaymentStatusOutput, InitiatePaymentInput, InitiatePaymentOutput, ProviderWebhookPayload, RefundPaymentInput, RefundPaymentOutput, RetrievePaymentInput, RetrievePaymentOutput, UpdatePaymentInput, UpdatePaymentOutput, WebhookActionResult } from '@medusajs/types';
 import TPaySDK, { TPay } from '@tax1driver/node-tpay';
@@ -285,3 +285,7 @@ export class TPayPaymentProviderService extends AbstractPaymentProvider<TPayOpti
         return TPayPaymentProviderService.identifier;
     }
 }
+
+export default ModuleProvider(Modules.PAYMENT, {
+    services: [TPayPaymentProviderService],
+});
