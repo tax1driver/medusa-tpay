@@ -1,8 +1,8 @@
 {
   "name": "medusa-tpay",
-  "version": "0.0.1",
-  "description": "A starter for Medusa plugins.",
-  "author": "Medusa (https://medusajs.com)",
+  "version": "0.0.3",
+  "description": "Medusa tpay Payment Provider",
+  "author": "Maciej Gerhards (https://github.com/tax1driver)",
   "license": "MIT",
   "files": [
     ".medusa/server"
@@ -53,19 +53,19 @@
     "yalc": "^1.0.0-pre.53"
   },
   "peerDependencies": {
-    "@medusajs/admin-sdk": "2.12.4",
-    "@medusajs/cli": "2.12.4",
-    "@medusajs/framework": "2.12.4",
-    "@medusajs/icons": "2.12.4",
-    "@medusajs/medusa": "2.12.4",
-    "@medusajs/test-utils": "2.12.4",
-    "@medusajs/ui": "4.0.25"
+    "@medusajs/admin-sdk": "^2.4.0",
+    "@medusajs/cli": "^2.4.0",
+    "@medusajs/framework": "^2.4.0",
+    "@medusajs/icons": "^2.4.0",
+    "@medusajs/medusa": "^2.4.0",
+    "@medusajs/test-utils": "^2.4.0",
+    "@medusajs/ui": "^4.0.0"
   },
   "engines": {
     "node": ">=20"
   },
   "dependencies": {
-    "@tax1driver/node-tpay": "file:.yalc/@tax1driver/node-tpay",
+    "@tax1driver/ts-tpay": "^1.0.0",
     "zod": "^4.3.5"
   }
 }

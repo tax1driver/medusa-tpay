@@ -1,4 +1,4 @@
-import { AbstractPaymentProvider, MedusaError, ModuleProvider, Modules } from '@medusajs/framework/utils';
+import { AbstractPaymentProvider, BigNumber, MedusaError, ModuleProvider, Modules } from '@medusajs/framework/utils';
 import { Logger } from '@medusajs/medusa';
 import { AuthorizePaymentInput, AuthorizePaymentOutput, CancelPaymentInput, CancelPaymentOutput, CapturePaymentInput, CapturePaymentOutput, DeletePaymentInput, DeletePaymentOutput, GetPaymentStatusInput, GetPaymentStatusOutput, InitiatePaymentInput, InitiatePaymentOutput, ProviderWebhookPayload, RefundPaymentInput, RefundPaymentOutput, RetrievePaymentInput, RetrievePaymentOutput, UpdatePaymentInput, UpdatePaymentOutput, WebhookActionResult } from '@medusajs/types';
 import TPaySDK, { TPay } from '@tax1driver/node-tpay';
@@ -49,7 +49,7 @@ export class TPayPaymentProviderService extends AbstractPaymentProvider<TPayOpti
     protected options_: TPayOptions;
     protected client_: TPaySDK;
 
-    constructor(options: TPayOptions, container: InjectedDeps) {
+    constructor(container: InjectedDeps, options: TPayOptions) {
         super(container);
 
         this.logger_ = container.logger;
@@ -67,11 +67,10 @@ export class TPayPaymentProviderService extends AbstractPaymentProvider<TPayOpti
     }
 
     async initiatePayment(input: InitiatePaymentInput): Promise<InitiatePaymentOutput> {
-        this.logger_.info(`initiatePayment: ${JSON.stringify(input)}`);
         const data = InitiatePaymentSchema.parse(input.data);
         const sessionId = data.session_id;
 
-        if (!SupportedCurrencies.includes(input.currency_code)) {
+        if (!SupportedCurrencies.includes(input.currency_code.toUpperCase())) {
             throw new MedusaError(
                 MedusaError.Types.NOT_ALLOWED,
                 `Currency ${input.currency_code} is not supported by TPay payment provider. Supported currencies are: ${SupportedCurrencies.join(', ')}`
@@ -79,41 +78,40 @@ export class TPayPaymentProviderService extends AbstractPaymentProvider<TPayOpti
         }
 
         const transaction = await this.client_.transactions.createTransaction({
-            amount: Number(input.amount),
-            currency: input.currency_code as any,
+            amount: Math.ceil(Number(input.amount) * 100) / 100,
+            currency: input.currency_code.toUpperCase() as any,
             description: this.options_.title || `Payment ${sessionId}`,
             payer: { email: data.email, name: data.customer_name },
-            pay: { method: "pay_by_link", groupId: null, channelId: null },
             hiddenDescription: sessionId,
             callbacks: {
                 notification: { url: this.options_.callbackUrl },
                 payerUrls: { success: this.options_.returnUrl, error: this.options_.failureUrl }
             }
-        });
+        } as any);
 
         const paymentData: TPayPaymentData = {
             session_id: sessionId,
             amount: Number(input.amount),
             currency: input.currency_code,
-            tx_id: transaction.transactionId,
+            tx_id: transaction.title,
             url: transaction.transactionPaymentUrl,
         };
 
         if (transaction.status === "paid") {
             return {
-                id: transaction.transactionId,
+                id: transaction.title,
                 data: { ...paymentData },
                 status: 'authorized',
             }
         } else if (transaction.status === "canceled") {
             return {
-                id: transaction.transactionId,
+                id: transaction.title,
                 data: { ...paymentData },
                 status: 'canceled',
             }
         } else {
             return {
-                id: transaction.transactionId,
+                id: transaction.title,
                 data: { ...paymentData },
                 status: 'pending',
             }
@@ -121,27 +119,26 @@ export class TPayPaymentProviderService extends AbstractPaymentProvider<TPayOpti
     }
 
     async getWebhookActionAndData(payload: ProviderWebhookPayload['payload']): Promise<WebhookActionResult> {
-        this.logger_.info(`getWebhookActionAndData: ${JSON.stringify(payload)}`);
-        const { rawData, headers } = payload;
+        const { data, rawData, headers } = payload;
 
         const tpayResult = await this.client_.notifications.validateRequest(
             headers as Record<string, string>,
-            rawData
+            JSON.stringify(data)
         );
 
         if (!tpayResult.valid) {
             throw new MedusaError(
                 MedusaError.Types.INVALID_DATA,
-                `Invalid TPay webhook payload received.`
+                `Invalid TPay webhook payload received. ${tpayResult.error}`
             );
         }
 
-        const sessionId = tpayResult.data.transactionHiddenDescription;
+        const sessionId = tpayResult.data.tr_crc;
         let action: WebhookActionResult['action'] = "pending";
 
-        if (tpayResult.data.transactionStatus === "correct") {
-            action = "captured"
-        } else if (tpayResult.data.transactionStatus === "canceled") {
+        if (tpayResult.data.tr_status === "TRUE") {
+            action = "authorized"
+        } else if (tpayResult.data.tr_status === "FALSE") {
             action = "canceled"
         } else {
             action = "pending"
@@ -151,21 +148,25 @@ export class TPayPaymentProviderService extends AbstractPaymentProvider<TPayOpti
             action,
             data: {
                 session_id: sessionId,
-                amount: Number(tpayResult.data.transactionAmount),
+                amount: new BigNumber(tpayResult.data.tr_amount),
             }
         }
     }
 
     async authorizePayment(input: AuthorizePaymentInput): Promise<AuthorizePaymentOutput> {
-        this.logger_.info(`authorizePayment: ${JSON.stringify(input)}`);
-        return {
-            data: input.data,
-            status: (await this.getPaymentStatus({ data: input.data })).status
-        };
+        try {
+            const result = await this.getPaymentStatus(input);
+
+            return {
+                data: input.data,
+                status: result.status
+            }
+        } catch (e) {
+            throw e;
+        }
     }
 
     async capturePayment(input: CapturePaymentInput): Promise<CapturePaymentOutput> {
-        this.logger_.info(`capturePayment: ${JSON.stringify(input)}`);
         const data = input.data as unknown as TPayPaymentData;
 
         if (!data || !data.session_id) {
@@ -176,7 +177,7 @@ export class TPayPaymentProviderService extends AbstractPaymentProvider<TPayOpti
         }
 
         const transaction = await this.client_.transactions.getTransaction(data.tx_id);
-        if (transaction.status === "paid") {
+        if (transaction.status === "correct") {
             return {
                 data: { ...input.data }
             };
@@ -189,7 +190,6 @@ export class TPayPaymentProviderService extends AbstractPaymentProvider<TPayOpti
     }
 
     async refundPayment(input: RefundPaymentInput): Promise<RefundPaymentOutput> {
-        this.logger_.info(`refundPayment: ${JSON.stringify(input)}`);
         const data = input.data as unknown as TPayPaymentData;
 
         if (!data || !data.session_id) {
@@ -216,7 +216,6 @@ export class TPayPaymentProviderService extends AbstractPaymentProvider<TPayOpti
     }
 
     async getPaymentStatus(input: GetPaymentStatusInput): Promise<GetPaymentStatusOutput> {
-        this.logger_.info(`getPaymentStatus: ${JSON.stringify(input)}`);
         const data = input.data as unknown as TPayPaymentData;
 
         if (!data || !data.session_id) {
@@ -226,24 +225,31 @@ export class TPayPaymentProviderService extends AbstractPaymentProvider<TPayOpti
             );
         }
 
-        const transaction = await this.client_.transactions.getTransaction(data.tx_id);
+        try {
+            const transaction = await this.client_.transactions.getTransaction(data.tx_id);
 
-        if (transaction.status === "paid") {
-            return { status: 'authorized' };
-        } else if (transaction.status === "canceled") {
-            return { status: "canceled" };
-        } else {
-            return { status: 'pending' };
+            if (transaction.status === "correct") {
+                return { status: 'authorized' };
+            } else if (transaction.status === "canceled") {
+                return { status: "canceled" };
+            } else {
+                return { status: 'pending' };
+            }
+        } catch (e) {
+            throw new MedusaError(
+                MedusaError.Types.NOT_FOUND,
+                `TPay transaction with ID ${data.tx_id} not found.`
+            );
         }
+
+
     }
 
     async retrievePayment(input: RetrievePaymentInput): Promise<RetrievePaymentOutput> {
-        this.logger_.info(`retrievePayment: ${JSON.stringify(input)}`);
         return { data: input.data };
     }
 
     async cancelPayment(input: CancelPaymentInput): Promise<CancelPaymentOutput> {
-        this.logger_.info(`cancelPayment: ${JSON.stringify(input)}`);
         const data = input.data as unknown as TPayPaymentData;
 
         if (!data || !data.session_id) {
@@ -272,12 +278,10 @@ export class TPayPaymentProviderService extends AbstractPaymentProvider<TPayOpti
     }
 
     async deletePayment(input: DeletePaymentInput): Promise<DeletePaymentOutput> {
-        this.logger_.info(`deletePayment: ${JSON.stringify(input)}`);
         return { data: input.data };
     }
 
     async updatePayment(input: UpdatePaymentInput): Promise<UpdatePaymentOutput> {
-        this.logger_.info(`updatePayment: ${JSON.stringify(input)}`);
         return { data: input.data };
     }
 
