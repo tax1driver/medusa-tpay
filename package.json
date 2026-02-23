@@ -1,6 +1,6 @@
 {
   "name": "medusa-tpay",
-  "version": "0.0.4",
+  "version": "0.0.5",
   "description": "Medusa tpay Payment Provider",
   "author": "Maciej Gerhards (https://github.com/tax1driver)",
   "license": "MIT",
@@ -23,7 +23,6 @@
   "keywords": [
     "medusa",
     "plugin",
-    "medusa-plugin-other",
     "medusa-plugin",
     "medusa-v2",
     "medusa-plugin-payment",
