@@ -25,7 +25,11 @@
     "plugin",
     "medusa-plugin-other",
     "medusa-plugin",
-    "medusa-v2"
+    "medusa-v2",
+    "medusa-plugin-payment",
+    "medusa-plugin-integration",
+    "tpay",
+    "payment"
   ],
   "scripts": {
     "build": "medusa plugin:build",
