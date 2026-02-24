@@ -46,7 +46,7 @@ modules: [
     options: {
       providers: [
         {
-          resolve: '@tax1driver/medusa-tpay/providers/tpay',
+          resolve: 'medusa-tpay/providers/tpay',
           options: {
             clientId: process.env.TPAY_CLIENT_ID,
             clientSecret: process.env.TPAY_CLIENT_SECRET,
