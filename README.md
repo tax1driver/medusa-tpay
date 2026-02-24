@@ -29,9 +29,9 @@ This plugin provides Tpay payment integration for Medusa commerce platform.
 ## Installation
 
 ```bash
-npm install @tax1driver/medusa-tpay
+npm install medusa-tpay
 # or
-yarn add @tax1driver/medusa-tpay
+yarn add medusa-tpay
 ```
 
 ## Configuration
