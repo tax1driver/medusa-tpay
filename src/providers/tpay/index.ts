@@ -282,7 +282,10 @@ export class TPayPaymentProviderService extends AbstractPaymentProvider<TPayOpti
     }
 
     async updatePayment(input: UpdatePaymentInput): Promise<UpdatePaymentOutput> {
-        return { data: input.data };
+        throw new MedusaError(
+            MedusaError.Types.INVALID_ARGUMENT,
+            "Updating tpay payments is not supported."
+        );
     }
 
     getIdentifier(): string {
